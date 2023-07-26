@@ -1,66 +1,61 @@
 package main
 
 import (
-	"context"
 	"log"
+	"strings"
+	"sync/atomic"
 	"time"
 
+	"github.com/araddon/qlbridge/datasource"
+	"github.com/araddon/qlbridge/rel"
+	"github.com/araddon/qlbridge/vm"
 	"github.com/samber/lo"
-	"pgmatcher/internal/matcher"
+	"golang.org/x/sync/errgroup"
 	"pgmatcher/internal/model"
-	"pgmatcher/internal/repository/postgresql"
 )
 
 func main() {
-	ctx := context.Background()
-	log.Println("init db connection")
+	rules := lo.RepeatBy[model.Rule](1_000_000, func(index int) model.Rule {
+		return model.GenerateRule()
+	})
+	nowMain := time.Now()
+	uniq := lo.Uniq(lo.Map(rules, func(it model.Rule, _ int) string {
+		return `FILTER AND(` + strings.Join(it.Conditions, `,`) + `)`
+	}))
+	log.Println("uniq:", len(uniq))
 
-	rep, err := postgresql.New(ctx, "postgres://user:password@localhost:5432/db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		log.Println("close connection")
-		rep.Close()
-	}()
-
-	// init data 100 0000 rules
-	const (
-		N         = 100
-		batchSize = 1000
-	)
-	for i := 0; i < batchSize; i++ {
-		rules := lo.RepeatBy[*model.Rule](N, func(index int) *model.Rule {
-			return model.GenerateRule()
-		})
-
-		if err := rep.Store(ctx, rules); err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	conditions, err := rep.GetAllConditions(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("all conditions:", len(conditions))
-
-	m, err := matcher.New(ctx, rep)
-	if err != nil {
-		log.Fatal(err)
-	}
+	prepareStmts := lo.Map(uniq, func(it string, _ int) *rel.FilterStatement {
+		return rel.MustParseFilter(it)
+	})
 
 	asset := model.GenerateAsset()
+	obj := datasource.NewContextWrapper(asset)
 	log.Println("asset:", asset)
 
 	now := time.Now()
+	chunk := lo.Chunk(prepareStmts, 10000)
+	log.Println("chunk:", len(chunk))
 
-	rules, err := m.Match(ctx, asset)
-	if err != nil {
-		log.Fatal(err)
+	var ops uint64
+	gr := errgroup.Group{}
+	for i := 0; i < len(chunk); i++ {
+		ch := chunk[i]
+		gr.Go(func() error {
+			for _, ql := range ch {
+
+				m, _ := vm.Matches(obj, ql)
+				if m {
+					atomic.AddUint64(&ops, 1)
+				}
+			}
+
+			return nil
+		})
 	}
 
-	log.Println("rules:", rules)
+	gr.Wait()
+
+	log.Println("count:", ops)
 	log.Println(time.Since(now))
+	log.Println(time.Since(nowMain))
 }

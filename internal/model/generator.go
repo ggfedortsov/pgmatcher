@@ -28,8 +28,8 @@ func GenerateAsset() Asset {
 	}
 }
 
-func GenerateRule() *Rule {
-	return &Rule{
+func GenerateRule() Rule {
+	return Rule{
 		ID:         gofakeit.UUID(),
 		Price:      gofakeit.Number(1, 1000),
 		Priority:   gofakeit.Number(1, 10),
@@ -77,7 +77,7 @@ func genRankIn() string {
 func genRarity() string {
 	val := gofakeit.RandomString(rarityValues)
 
-	return fmt.Sprintf(`rarity = "%s"`, val)
+	return fmt.Sprintf(`rarity == "%s"`, val)
 }
 
 func genPosition() string {

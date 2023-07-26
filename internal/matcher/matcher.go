@@ -2,6 +2,8 @@ package matcher
 
 import (
 	"context"
+	"log"
+	"time"
 
 	"github.com/araddon/qlbridge/datasource"
 	"github.com/araddon/qlbridge/rel"
@@ -38,13 +40,14 @@ func New(ctx context.Context, s Storage) (*Matcher, error) {
 
 func (m *Matcher) Match(ctx context.Context, a model.Asset) ([]model.Rule, error) {
 	obj := datasource.NewContextWrapper(a)
+	t := time.Now()
 	var allowConds []string
 	for s, ql := range m.prepareQlStatement {
 		if matches, _ := vm.Matches(obj, ql); matches {
 			allowConds = append(allowConds, s)
 		}
 	}
-
+	log.Println(time.Since(t))
 	rules, err := m.storage.GetAllowRules(ctx, a.Price, allowConds)
 	if err != nil {
 		return nil, err
