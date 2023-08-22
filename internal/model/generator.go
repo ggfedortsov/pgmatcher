@@ -55,14 +55,14 @@ func genRank() string {
 }
 
 func genSimpleRank() string {
-	op := gofakeit.RandomString([]string{"=", ">", "<"})
+	op := gofakeit.RandomString([]string{"==", ">", "<"})
 	val := gofakeit.Number(minRank, maxRank)
 
-	return fmt.Sprintf("rank %s %d", op, val)
+	return fmt.Sprintf("Rank %s %d", op, val)
 }
 
 func genRankRange() string {
-	return fmt.Sprintf("rank <= %d AND rank >= %d", gofakeit.Number(minRank, maxRank/2), gofakeit.Number(maxRank/2+1, maxRank))
+	return fmt.Sprintf("Rank <= %d && Rank >= %d", gofakeit.Number(minRank, maxRank/2), gofakeit.Number(maxRank/2+1, maxRank))
 }
 
 func genRankIn() string {
@@ -71,18 +71,18 @@ func genRankIn() string {
 	}))
 	sort.Strings(ints)
 
-	return fmt.Sprintf("rank in (%s)", strings.Join(ints, ","))
+	return fmt.Sprintf("Rank in [%s]", strings.Join(ints, ","))
 }
 
 func genRarity() string {
 	val := gofakeit.RandomString(rarityValues)
 
-	return fmt.Sprintf(`rarity == "%s"`, val)
+	return fmt.Sprintf(`Rarity == "%s"`, val)
 }
 
 func genPosition() string {
-	op := gofakeit.RandomString([]string{"=", ">", "<"})
+	op := gofakeit.RandomString([]string{"==", ">", "<"})
 	val := gofakeit.Number(minPosition, maxPosition)
 
-	return fmt.Sprintf("position %s %d", op, val)
+	return fmt.Sprintf("Position %s %d", op, val)
 }

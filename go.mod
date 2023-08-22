@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/antonmedv/expr v1.14.3 // indirect
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de // indirect
 	github.com/araddon/gou v0.0.0-20211019181548-e7d08105776c // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
